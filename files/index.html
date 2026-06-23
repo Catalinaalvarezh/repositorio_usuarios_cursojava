@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel de Usuarios · JSONPlaceholder</title>
+<style>
+  :root{
+    --bg: #0b0f0d;
+    --panel: #111814;
+    --line: #223028;
+    --text: #e9f3ec;
+    --muted: #7d9488;
+    --accent: #6dff9c;
+    --accent-dim: #2c5b3f;
+    --mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: "Inter", system-ui, -apple-system, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height:100vh;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: -1px -1px;
+  }
+
+  .wrap{
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header{
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
+
+  .tag{
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .tag::before{
+    content:"";
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+    display:inline-block;
+  }
+
+  h1{
+    font-family: var(--mono);
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  h1 span{ color: var(--accent); }
+
+  .sub{
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 640px;
+    line-height: 1.6;
+  }
+  .sub code{
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+
+  .status-line{
+    font-family: var(--mono);
+    font-size: 13px;
+    margin-top: 18px;
+    color: var(--muted);
+  }
+  .status-line.ok{ color: var(--accent); }
+  .status-line.err{ color: #ff6d6d; }
+
+  .grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+
+  .card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+  }
+
+  .card .idx{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent-dim);
+    letter-spacing: .1em;
+  }
+
+  .card h2{
+    font-size: 15px;
+    margin:0;
+    font-weight: 600;
+  }
+
+  .card p{
+    margin:0;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+    flex-grow:1;
+  }
+
+  button{
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    text-align:left;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button::before{ content: "▸ "; }
+  button:hover{
+    background: var(--accent);
+    color: #06140c;
+    border-color: var(--accent);
+  }
+  button:disabled{
+    opacity:.4;
+    cursor: not-allowed;
+  }
+
+  footer{
+    border-top: 1px solid var(--line);
+    margin-top: 32px;
+    padding-top: 18px;
+  }
+
+  #console-label{
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  #console{
+    background: #060a07;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: #9fd8b3;
+    line-height: 1.5;
+  }
+  #console p{
+    margin: 0 0 4px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="tag">GET /users · jsonplaceholder.typicode.com</div>
+      <h1>Panel de <span>Usuarios</span></h1>
+      <p class="sub">
+        Esta página carga la data del endpoint con <code>XMLHttpRequest</code> apenas se
+        construye <code>GestorUsuarios</code>, y deja seis métodos disponibles para explorarla.
+        Revisa la consola del navegador (F12) para ver toda la salida — abajo se muestra un espejo simplificado.
+      </p>
+      <div id="status" class="status-line">Cargando datos del servicio…</div>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <span class="idx">01</span>
+        <h2>Listar nombres</h2>
+        <p>Imprime el nombre de todos los usuarios, en el orden que llegan del servicio.</p>
+        <button id="btn-nombres" disabled>Listar nombres</button>
+      </div>
+
+      <div class="card">
+        <span class="idx">02</span>
+        <h2>Info básica</h2>
+        <p>Pide un nombre por prompt y muestra su username y correo.</p>
+        <button id="btn-basica" disabled>Buscar info básica</button>
+      </div>
+
+      <div class="card">
+        <span class="idx">03</span>
+        <h2>Dirección completa</h2>
+        <p>Pide un nombre por prompt y lista todos los campos de su dirección.</p>
+        <button id="btn-direccion" disabled>Buscar dirección</button>
+      </div>
+
+      <div class="card">
+        <span class="idx">04</span>
+        <h2>Info avanzada</h2>
+        <p>Pide un nombre por prompt y muestra teléfono, sitio web y compañía completa.</p>
+        <button id="btn-avanzada" disabled>Buscar info avanzada</button>
+      </div>
+
+      <div class="card">
+        <span class="idx">05</span>
+        <h2>Compañías</h2>
+        <p>Lista todas las compañías junto a su catchphrase.</p>
+        <button id="btn-companias" disabled>Listar compañías</button>
+      </div>
+
+      <div class="card">
+        <span class="idx">06</span>
+        <h2>Nombres (A-Z)</h2>
+        <p>Lista los nombres de todos los usuarios ordenados alfabéticamente.</p>
+        <button id="btn-orden" disabled>Listar ordenado</button>
+      </div>
+    </section>
+
+    <footer>
+      <div id="console-label">Salida (espejo de consola)</div>
+      <div id="console"><p>// esperando acciones…</p></div>
+    </footer>
+  </div>
+
+<script>
+/**
+ * GestorUsuarios
+ * ---------------
+ * Pide la data de https://jsonplaceholder.typicode.com/users mediante
+ * XMLHttpRequest en el constructor, la almacena en la instancia, y expone
+ * métodos para consultarla de distintas formas.
+ */
+class GestorUsuarios {
+  constructor(url = "https://jsonplaceholder.typicode.com/users", onSuccess, onError) {
+    this.url = url;
+    this.usuarios = [];      // aquí se almacena la data una vez llega la respuesta
+    this.cargado = false;
+
+    this._cargarDatos(onSuccess, onError);
+  }
+
+  // Petición síncrona-en-callback mediante XMLHttpRequest.
+  // Acepta callbacks opcionales para avisar éxito/error a la UI.
+  _cargarDatos(onSuccess, onError) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", this.url, true);
+    xhr.responseType = "json";
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        this.usuarios = xhr.response;
+        this.cargado = true;
+        console.log("GestorUsuarios: datos cargados ->", this.usuarios);
+        if (onSuccess) onSuccess(this.usuarios);
+      } else {
+        console.error("GestorUsuarios: error HTTP", xhr.status);
+        if (onError) onError(new Error("Error HTTP " + xhr.status));
+      }
+    };
+
+    xhr.onerror = () => {
+      console.error("GestorUsuarios: fallo de red al pedir los usuarios");
+      if (onError) onError(new Error("Fallo de red"));
+    };
+
+    xhr.send();
+  }
+
+  // Busca un usuario por nombre (insensible a mayúsculas/minúsculas).
+  // Permite coincidencia parcial para que el prompt sea más tolerante.
+  _buscarPorNombre(nombre) {
+    if (!nombre) return undefined;
+    const objetivo = nombre.trim().toLowerCase();
+    return this.usuarios.find(u => u.name.toLowerCase() === objetivo) ||
+           this.usuarios.find(u => u.name.toLowerCase().includes(objetivo));
+  }
+
+  // 1) Listar los nombres de todos los usuarios.
+  listarNombres() {
+    const nombres = this.usuarios.map(u => u.name);
+    console.log("=== Nombres de usuarios ===");
+    nombres.forEach((n, i) => console.log(`${i + 1}. ${n}`));
+    return nombres;
+  }
+
+  // 2) Pedir nombre por prompt y mostrar username y correo.
+  mostrarInfoBasica() {
+    const nombre = prompt("Ingresa el nombre del usuario (info básica):");
+    const usuario = this._buscarPorNombre(nombre);
+
+    if (!usuario) {
+      console.warn(`No se encontró ningún usuario que coincida con "${nombre}"`);
+      return null;
+    }
+
+    console.log(`=== Info básica de ${usuario.name} ===`);
+    console.log("Username:", usuario.username);
+    console.log("Correo:", usuario.email);
+    return { username: usuario.username, email: usuario.email };
+  }
+
+  // 3) Pedir nombre por prompt y listar todos los campos de su dirección.
+  mostrarDireccion() {
+    const nombre = prompt("Ingresa el nombre del usuario (dirección):");
+    const usuario = this._buscarPorNombre(nombre);
+
+    if (!usuario) {
+      console.warn(`No se encontró ningún usuario que coincida con "${nombre}"`);
+      return null;
+    }
+
+    const dir = usuario.address;
+    console.log(`=== Dirección de ${usuario.name} ===`);
+    console.log("Calle:", dir.street);
+    console.log("Número/Suite:", dir.suite);
+    console.log("Ciudad:", dir.city);
+    console.log("Código postal:", dir.zipcode);
+    console.log("Latitud:", dir.geo.lat);
+    console.log("Longitud:", dir.geo.lng);
+    return dir;
+  }
+
+  // 4) Pedir nombre por prompt y mostrar teléfono, sitio web y compañía completa.
+  mostrarInfoAvanzada() {
+    const nombre = prompt("Ingresa el nombre del usuario (info avanzada):");
+    const usuario = this._buscarPorNombre(nombre);
+
+    if (!usuario) {
+      console.warn(`No se encontró ningún usuario que coincida con "${nombre}"`);
+      return null;
+    }
+
+    const empresa = usuario.company;
+    console.log(`=== Info avanzada de ${usuario.name} ===`);
+    console.log("Teléfono:", usuario.phone);
+    console.log("Sitio web:", usuario.website);
+    console.log("Compañía - Nombre:", empresa.name);
+    console.log("Compañía - Catchphrase:", empresa.catchPhrase);
+    console.log("Compañía - BS:", empresa.bs);
+    return { phone: usuario.phone, website: usuario.website, company: empresa };
+  }
+
+  // 5) Listar todas las compañías junto a su catchphrase.
+  listarCompanias() {
+    const lista = this.usuarios.map(u => ({
+      nombre: u.company.name,
+      catchPhrase: u.company.catchPhrase
+    }));
+
+    console.log("=== Compañías y su catchphrase ===");
+    lista.forEach((c, i) => console.log(`${i + 1}. ${c.nombre} — "${c.catchPhrase}"`));
+    return lista;
+  }
+
+  // 6) Listar los nombres de todos los usuarios ordenados alfabéticamente.
+  listarNombresOrdenados() {
+    const nombres = this.usuarios.map(u => u.name).sort((a, b) => a.localeCompare(b));
+    console.log("=== Nombres ordenados alfabéticamente ===");
+    nombres.forEach((n, i) => console.log(`${i + 1}. ${n}`));
+    return nombres;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Glue de la interfaz: instancia la clase, habilita los botones cuando
+// la data está lista, y refleja la salida principal en el panel de la página.
+// ---------------------------------------------------------------------------
+
+const statusEl = document.getElementById("status");
+const consoleEl = document.getElementById("console");
+const botones = ["btn-nombres", "btn-basica", "btn-direccion", "btn-avanzada", "btn-companias", "btn-orden"]
+  .map(id => document.getElementById(id));
+
+function reflejarEnPanel(lineas) {
+  consoleEl.innerHTML = "";
+  lineas.forEach(linea => {
+    const p = document.createElement("p");
+    p.textContent = linea;
+    consoleEl.appendChild(p);
+  });
+}
+
+const gestor = new GestorUsuarios(
+  "https://jsonplaceholder.typicode.com/users",
+  () => {
+    statusEl.textContent = `Listo — ${gestor.usuarios.length} usuarios cargados. Abre la consola para ver el detalle completo.`;
+    statusEl.classList.add("ok");
+    botones.forEach(b => b.disabled = false);
+  },
+  (err) => {
+    statusEl.textContent = "No se pudo cargar la data: " + err.message;
+    statusEl.classList.add("err");
+  }
+);
+
+document.getElementById("btn-nombres").addEventListener("click", () => {
+  const nombres = gestor.listarNombres();
+  reflejarEnPanel(nombres.map((n, i) => `${i + 1}. ${n}`));
+});
+
+document.getElementById("btn-basica").addEventListener("click", () => {
+  const info = gestor.mostrarInfoBasica();
+  reflejarEnPanel(info
+    ? [`Username: ${info.username}`, `Correo: ${info.email}`]
+    : ["No se encontró ese usuario."]);
+});
+
+document.getElementById("btn-direccion").addEventListener("click", () => {
+  const dir = gestor.mostrarDireccion();
+  reflejarEnPanel(dir
+    ? [
+        `Calle: ${dir.street}`,
+        `Número/Suite: ${dir.suite}`,
+        `Ciudad: ${dir.city}`,
+        `Código postal: ${dir.zipcode}`,
+        `Lat/Lng: ${dir.geo.lat}, ${dir.geo.lng}`
+      ]
+    : ["No se encontró ese usuario."]);
+});
+
+document.getElementById("btn-avanzada").addEventListener("click", () => {
+  const info = gestor.mostrarInfoAvanzada();
+  reflejarEnPanel(info
+    ? [
+        `Teléfono: ${info.phone}`,
+        `Sitio web: ${info.website}`,
+        `Compañía: ${info.company.name}`,
+        `Catchphrase: ${info.company.catchPhrase}`,
+        `BS: ${info.company.bs}`
+      ]
+    : ["No se encontró ese usuario."]);
+});
+
+document.getElementById("btn-companias").addEventListener("click", () => {
+  const lista = gestor.listarCompanias();
+  reflejarEnPanel(lista.map((c, i) => `${i + 1}. ${c.nombre} — "${c.catchPhrase}"`));
+});
+
+document.getElementById("btn-orden").addEventListener("click", () => {
+  const nombres = gestor.listarNombresOrdenados();
+  reflejarEnPanel(nombres.map((n, i) => `${i + 1}. ${n}`));
+});
+</script>
+</body>
+</html>
